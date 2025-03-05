@@ -1,0 +1,4 @@
+(library
+ (name synpa)
+  (preprocess
+   (pps ppx_deriving.show)))

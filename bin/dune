@@ -1,0 +1,6 @@
+(executable
+ (public_name synpa)
+ (name main)
+ (libraries synpa)
+  (preprocess
+   (pps ppx_deriving.show)))
