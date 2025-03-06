@@ -51,7 +51,7 @@ let consolidate l =
  in
   aux l
 
-let parallel (proc1 : process) (proc2 : process) =
+let parallel (proc1 : process) (proc2 : process) : process =
  let mangle_states s1 s2 = s1 ^ "_" ^ s2 in
  List.map
  (fun ((s1,moves1),(s2,moves2)) ->
@@ -221,4 +221,42 @@ struct
    ]
 
   let test = parallel (p (Var "p")) (q (Var "q"))
+end
+
+module ExampleLoopBi =
+struct
+  let a  = (true, 'a')
+  let na = (false, 'a')
+  let b  = (true, 'b')
+  let nb = (false, 'b')
+
+  (* prcons = probability to decrement job number and send an a *)
+  let p name1 name2 (a,na) (b,nb) prcons : process =
+   let p0 = name1 ^ "0" in
+   let p1 = name1 ^ "1" in
+   let p2 = name1 ^ "2" in
+   let p3 = name1 ^ "3" in
+   let q0 = name2 ^ "0" in
+   let q1 = name2 ^ "1" in
+   let q2 = name2 ^ "2" in
+   let q3 = name2 ^ "3" in
+   let prncons = Sub(Con 1., prcons) in
+
+   [ p0, [ M.singleton a,  (Con 1.,  q1, M.empty)
+         ; M.singleton na, (Con 1.,  q0, M.empty)]
+   ; q0, [ M.empty,        (Con 1.,  p0, M.singleton nb)]
+   ; p1, [ M.singleton a,  (Con 1.,  q2, M.empty)
+         ; M.singleton na, (Con 1.,  q1, M.empty)]
+   ; q1, [ M.empty,        (prcons,  p0, M.singleton b)
+         ; M.empty,        (prncons, p1, M.singleton nb)]
+   ; p2, [ M.singleton a,  (Con 1.,  q3, M.empty)
+         ; M.singleton na, (Con 1.,  q2, M.empty)]
+   ; q2, [ M.empty,        (prcons,  p1, M.singleton b)
+         ; M.empty,        (prncons, p2, M.singleton nb)]
+   ; p3, [ M.singleton a,  (Con 1.,  q3, M.empty)
+         ; M.singleton na, (Con 1.,  q3, M.empty)]
+   ; q3, [ M.empty,        (Con 1.,  p3, M.singleton nb)]
+   ]
+
+  let test = parallel (p "P" "Q" (a,na) (b,nb) (Var "p")) (p "R" "S" (b,nb) (a,na) (Var "q"))
 end
