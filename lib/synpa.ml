@@ -135,5 +135,73 @@ struct
      (* what about [a;b|nb] and [a|na;b] *)
    ]
 
-let test = parallel (parallel (p (Var "p₁") (Var "q₁")) (q (Var "p₂") (Var "q₂"))) (r (Var "p₃"))
+  let test = parallel (parallel (p (Var "p₁") (Var "q₁")) (q (Var "p₂") (Var "q₂"))) (r (Var "p₃"))
+end
+
+module ExampleLoop =
+struct
+  let a  = (true, 'a')
+  let na = (false, 'a')
+  let b  = (true, 'b')
+  let nb = (false, 'b')
+
+  (* prcons = probability to decrement job number and send an a *)
+  let p prcons : process =
+   let p0 = "p0" in
+   let p1 = "p1" in
+   let p2 = "p2" in
+   let prncons = Min(Con 1., prcons) in
+
+   let eps00  = prcons in
+   let eps00' = Con 1. in
+   let eps01  = prncons in
+
+   let eps11  = prcons in
+   let eps12  = prncons in
+   let eps10  = prcons in
+   let eps11' = prncons in
+
+   let eps22  = Con 1. in
+
+   [ p0, [ M.singleton a,  (eps01,  p1, M.singleton nb)
+         ; M.singleton a,  (eps00,  p0, M.singleton b)
+         ; M.singleton na, (eps00', p0, M.singleton nb) ]
+   ; p1, [ M.singleton a,  (eps12,  p2, M.singleton nb)
+         ; M.singleton a,  (eps11,  p1, M.singleton b)
+         ; M.singleton na, (eps10,  p0, M.singleton b)
+         ; M.singleton na, (eps11', p1, M.singleton nb) ]
+   ; p2, [ M.singleton a,  (eps22,  p2, M.singleton nb)
+         ; M.singleton na, (eps22,  p2, M.singleton nb) ]
+   ]
+
+  (* prcons = probability to decrement job number and send an a *)
+  let q prcons : process =
+   let q0 = "q0" in
+   let q1 = "q1" in
+   let q2 = "q2" in
+   let prncons = Min(Con 1., prcons) in
+
+   let eps00  = prcons in
+   let eps01  = prncons in
+   let eps00' = Con 1. in
+
+   let eps11  = prcons in
+   let eps12  = prncons in
+   let eps10  = prcons in
+   let eps11' = prncons in
+
+   let eps22  = Con 1. in
+
+   [ q0, [ M.singleton b,  (eps01,  q1, M.singleton na)
+         ; M.singleton b,  (eps00,  q0, M.singleton a)
+         ; M.singleton nb, (eps00', q0, M.singleton na) ]
+   ; q1, [ M.singleton b,  (eps12,  q2, M.singleton na)
+         ; M.singleton b,  (eps11,  q1, M.singleton a)
+         ; M.singleton nb, (eps10,  q0, M.singleton a)
+         ; M.singleton nb, (eps11', q1, M.singleton na) ]
+   ; q2, [ M.singleton b,  (eps22,  q2, M.singleton na)
+         ; M.singleton nb, (eps22,  q2, M.singleton na) ]
+   ]
+
+  let test = parallel (p (Var "p")) (q (Var "q"))
 end
