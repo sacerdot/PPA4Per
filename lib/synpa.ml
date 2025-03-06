@@ -13,7 +13,7 @@ let rec pp_expr fmt =
 
 (* Matlab ha un formato per catene di Markov al tempo discreto *)
 
-type action = char [@@deriving show]
+type action = bool * char [@@deriving show]  (* true = positive, false = negative *)
 module M = (* set in place of multiset! *)
  struct
    include Set.Make(struct type t = action let compare = compare end)
@@ -25,33 +25,41 @@ type state = string [@@deriving show]
 type prob = expr [@@deriving show]
 type process = (state * (multiaction * (prob * state * multiaction)) list) list [@@deriving show]
 
+let opp (b, c) = (not b, c)
+
 let cartesian l1 l2 =
  List.fold_right
   (fun x acc -> List.map (fun y -> x,y) l2 @ acc)
   l1 []
+
+let incompatible m1 m2 =
+ M.exists (fun i -> M.exists (fun j -> j = opp i) m2) m1
 
 let parallel (proc1 : process) (proc2 : process) =
  let mangle_states s1 s2 = s1 ^ "_" ^ s2 in
  List.map
  (fun ((s1,moves1),(s2,moves2)) ->
    mangle_states s1 s2,
-     List.map
-     (fun ((acts1,(eps1,s1,out1)),(acts2,(eps2,s2,out2))) ->
-       let ins = M.union acts1 acts2 in
-       let outs = M.union out1 out2 in
-       let intersect = M.inter ins outs in
-       let ins = M.diff ins intersect in
-       let outs = M.diff outs intersect in
-       ins,(Mul(eps1,eps2),mangle_states s1 s2,outs))
+     List.filter_map
+     (fun ((inp1,(eps1,s1,out1)),(inp2,(eps2,s2,out2))) ->
+       if incompatible inp1 out2 || incompatible inp2 out1 then
+        None
+       else
+        let inp = M.union inp1 inp2 in
+        let out = M.union out1 out2 in
+        let intersect = M.inter inp out in
+        let inp = M.diff inp intersect in
+        let out = M.diff out intersect in
+        Some (inp,(Mul(eps1,eps2),mangle_states s1 s2,out)))
      (cartesian moves1 moves2))
  (cartesian proc1 proc2)
 
 module Example =
 struct
-  let a  = 'a'
-  let na = 'A'
-  let b  = 'b'
-  let nb = 'B'
+  let a  = (true, 'a')
+  let na = (false, 'a')
+  let b  = (true, 'b')
+  let nb = (false, 'b')
 
   (* prgen = probability to increment job number
      prcons = probability to decrement job number and send an a *)
@@ -91,7 +99,7 @@ struct
    let eps22  = prncons in
    let eps21  = prcons in
    [ q0, [ M.empty, (eps00, q0, M.singleton nb) ; M.empty, (eps01, q1, M.singleton nb) ]
-   ; q1, [ M.empty, (eps11, q1, M.singleton nb) ; M.empty,  (eps10, q0, M.singleton b) ; M.empty, (eps11', q1, M.singleton a) ; M.empty, (eps12, q2, M.singleton na) ]
+   ; q1, [ M.empty, (eps11, q1, M.singleton nb) ; M.empty,  (eps10, q0, M.singleton b) ; M.empty, (eps11', q1, M.singleton b) ; M.empty, (eps12, q2, M.singleton nb) ]
    ; q2, [ M.empty, (eps22, q2, M.singleton nb) ; M.empty,  (eps21, q1, M.singleton b) ]
    ]
 
