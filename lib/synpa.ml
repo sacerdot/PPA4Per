@@ -38,8 +38,21 @@ module Dot =
    String.concat "\n"
     (List.map (pp_transition st) transitions)
 
-  let pp_process proc =
+  let pp_clusters proc =
+   function
+      None -> ""
+    | Some f ->
+       let states1, states2 = List.partition f (List.map fst proc) in
+       "subgraph { rank=same; " ^
+        String.concat "; " states1 ^
+        " }\n" ^
+       "subgraph { rank=same; " ^
+        String.concat "; " states2 ^
+        " }\n"
+
+  let pp_process (proc, clusterize) =
    "digraph {\n" ^
+    pp_clusters proc clusterize ^
     String.concat "\n" (List.map pp_state_trans proc) ^
     "\n}\n"
 
@@ -303,5 +316,11 @@ struct
   let test10 = reachable_from test "Q1_R0"
   let test20 = reachable_from test "Q2_R0"
 
-  let all = [queue1; queue2; test00; test10; test20]
+  let clusterize_on c s = s.[0] = c
+
+  let all = [queue1, Some (clusterize_on 'P') ;
+             queue2, Some (clusterize_on 'S') ;
+             test00, Some (clusterize_on 'Q') ;
+             test10, Some (clusterize_on 'Q') ;
+             test20, Some (clusterize_on 'Q') ]
 end
