@@ -42,6 +42,12 @@ module Dot =
    "digraph {\n" ^
     String.concat "\n" (List.map pp_state_trans proc) ^
     "\n}\n"
+
+  let dot_of_process proc =
+   let fd = open_out "/tmp/graph.dot" in
+   output_string fd (pp_process proc) ;
+   close_out fd ;
+   ignore (Sys.command "dot -Tpdf /tmp/graph.dot > /tmp/graph.pdf")
  end
 
 let opp (b, c) = (not b, c)
@@ -87,6 +93,20 @@ let parallel (proc1 : process) (proc2 : process) : process =
            Some (inp,(Mul(eps1,eps2),mangle_states s1 s2,out)))
         (cartesian moves1 moves2)))
  (cartesian proc1 proc2)
+
+let reachable_from (proc : process) (st : state) : process =
+ let rec aux visited =
+  function
+     [] -> visited
+   | st::to_visit ->
+      if List.exists (fun (st',_) -> st=st') visited then aux visited to_visit
+      else
+       let trans = List.assoc st proc in
+       let visited = (st,trans)::visited in
+       let to_visit = List.map (fun (_,(_,st,_)) -> st) trans @ to_visit in
+       aux visited to_visit
+ in
+  aux [] [st]
 
 module Example =
 struct
@@ -278,4 +298,6 @@ struct
   let queue1 = p "P" "Q" (a,na) (b,nb) (Var "p")
   let queue2 = p "R" "S" (b,nb) (a,na) (Var "q")
   let test = parallel queue1 queue2
+
+  let test20 = reachable_from test "Q2_R0"
 end
