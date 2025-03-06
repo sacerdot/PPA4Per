@@ -15,7 +15,9 @@ let rec pp_expr fmt =
 
 (* Matlab ha un formato per catene di Markov al tempo discreto *)
 
-type action = bool * char [@@deriving show]  (* true = positive, false = negative *)
+type action = bool * char (*[@@deriving show]*)  (* true = positive, false = negative *)
+let pp_action fmt (b,c) = Format.fprintf fmt "%s%c" (if b then "" else "-") c
+
 module M = (* set in place of multiset! *)
  struct
    include Set.Make(struct type t = action let compare = compare end)
@@ -26,6 +28,21 @@ type multiaction = M.t [@@deriving show]
 type state = string [@@deriving show]
 type prob = expr [@@deriving show]
 type process = (state * (multiaction * (prob * state * multiaction)) list) list [@@deriving show]
+
+module Dot =
+ struct
+  let pp_transition st1 (inp, (prob, st2, out)) =
+    Printf.sprintf "  %s -> %s [label=\"%s\"]" st1 st2 ("<" ^ show_multiaction inp ^ "," ^ show_prob prob ^ "," ^ show_multiaction out ^ ">")
+
+  let pp_state_trans (st, transitions) =
+   String.concat "\n"
+    (List.map (pp_transition st) transitions)
+
+  let pp_process proc =
+   "digraph {\n" ^
+    String.concat "\n" (List.map pp_state_trans proc) ^
+    "\n}\n"
+ end
 
 let opp (b, c) = (not b, c)
 
@@ -258,5 +275,7 @@ struct
    ; q3, [ M.empty,        (Con 1.,  p3, M.singleton nb)]
    ]
 
-  let test = parallel (p "P" "Q" (a,na) (b,nb) (Var "p")) (p "R" "S" (b,nb) (a,na) (Var "q"))
+  let queue1 = p "P" "Q" (a,na) (b,nb) (Var "p")
+  let queue2 = p "R" "S" (b,nb) (a,na) (Var "q")
+  let test = parallel queue1 queue2
 end
