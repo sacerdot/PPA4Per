@@ -43,11 +43,11 @@ module Dot =
     String.concat "\n" (List.map pp_state_trans proc) ^
     "\n}\n"
 
-  let dot_of_process proc =
+  let dot_of_processes procs =
    let fd = open_out "/tmp/graph.dot" in
-   output_string fd (pp_process proc) ;
+   List.iter (fun proc -> output_string fd (pp_process proc)) procs ;
    close_out fd ;
-   ignore (Sys.command "dot -Tpdf /tmp/graph.dot > /tmp/graph.pdf")
+   ignore (Sys.command "dot -Tps:cairo:cairo /tmp/graph.dot | ps2pdf - > /tmp/graph.pdf")
  end
 
 let opp (b, c) = (not b, c)
@@ -299,5 +299,9 @@ struct
   let queue2 = p "R" "S" (b,nb) (a,na) (Var "q")
   let test = parallel queue1 queue2
 
+  let test00 = reachable_from test "Q0_R0"
+  let test10 = reachable_from test "Q1_R0"
   let test20 = reachable_from test "Q2_R0"
+
+  let all = [queue1; queue2; test00; test10; test20]
 end

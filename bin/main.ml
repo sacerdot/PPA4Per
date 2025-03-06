@@ -7,4 +7,4 @@ let () =
   print_endline (show_process ExampleLoop.test) ;
   print_endline "========== A tandem in loop (bipartite) ==========" ;
   print_endline (show_process ExampleLoopBi.test) ;
-  Dot.dot_of_process ExampleLoopBi.test20
+  Dot.dot_of_processes ExampleLoopBi.all
