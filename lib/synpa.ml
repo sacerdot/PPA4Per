@@ -5,10 +5,16 @@ type expr =
  | Add of expr * expr
  | Mul of expr * expr
 
+let mul e1 e2 =
+ match e1,e2 with
+ | Con 1., e
+ | e, Con 1. -> e
+ | _, _ -> Mul(e1,e2)
+
 let rec pp_expr fmt =
  function
   | Var s -> Format.fprintf fmt "%s" s
-  | Con f -> Format.fprintf fmt "%.2f" f
+  | Con f -> Format.fprintf fmt "%g" f
   | Sub(e1,e2) -> Format.fprintf fmt "(%a - %a)" pp_expr e1 pp_expr e2
   | Add(e1,e2) -> Format.fprintf fmt "(%a + %a)" pp_expr e1 pp_expr e2
   | Mul(e1,e2) -> Format.fprintf fmt "%a * %a" pp_expr e1 pp_expr e2
@@ -103,7 +109,7 @@ let parallel (proc1 : process) (proc2 : process) : process =
            let intersect = M.inter inp out in
            let inp = M.diff inp intersect in
            let out = M.diff out intersect in
-           Some (inp,(Mul(eps1,eps2),mangle_states s1 s2,out)))
+           Some (inp,(mul eps1 eps2,mangle_states s1 s2,out)))
         (cartesian moves1 moves2)))
  (cartesian proc1 proc2)
 
