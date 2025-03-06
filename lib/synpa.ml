@@ -1,14 +1,16 @@
 type expr =
  | Var of string
  | Con of float
- | Min of expr * expr
+ | Sub of expr * expr
+ | Add of expr * expr
  | Mul of expr * expr
 
 let rec pp_expr fmt =
  function
   | Var s -> Format.fprintf fmt "%s" s
   | Con f -> Format.fprintf fmt "%.2f" f
-  | Min(e1,e2) -> Format.fprintf fmt "(%a - %a)" pp_expr e1 pp_expr e2
+  | Sub(e1,e2) -> Format.fprintf fmt "(%a - %a)" pp_expr e1 pp_expr e2
+  | Add(e1,e2) -> Format.fprintf fmt "(%a + %a)" pp_expr e1 pp_expr e2
   | Mul(e1,e2) -> Format.fprintf fmt "%a * %a" pp_expr e1 pp_expr e2
 
 (* Matlab ha un formato per catene di Markov al tempo discreto *)
@@ -35,23 +37,38 @@ let cartesian l1 l2 =
 let incompatible m1 m2 =
  M.exists (fun i -> M.exists (fun j -> j = opp i) m2) m1
 
+(* Merge together transitions with same input set, output set and target state,
+   adding the probabilities *)
+let consolidate l =
+ let l =
+  List.sort (fun (inp1,(_,s1,out1)) (inp2,(_,s2,out2)) -> compare (inp1,s1,out1) (inp2,s2,out2)) l in
+ let rec aux =
+  function
+     [] | [_] as l -> l
+   | (inp1,(prob1,s1,out1))::(inp2,(prob2,s2,out2))::l when inp1=inp2 && s1=s2 && out1=out2 ->
+       aux ((inp1,(Add(prob1,prob2),s1,out1))::l)
+   | tran::l -> tran::aux l
+ in
+  aux l
+
 let parallel (proc1 : process) (proc2 : process) =
  let mangle_states s1 s2 = s1 ^ "_" ^ s2 in
  List.map
  (fun ((s1,moves1),(s2,moves2)) ->
    mangle_states s1 s2,
-     List.filter_map
-     (fun ((inp1,(eps1,s1,out1)),(inp2,(eps2,s2,out2))) ->
-       if incompatible inp1 out2 || incompatible inp2 out1 then
-        None
-       else
-        let inp = M.union inp1 inp2 in
-        let out = M.union out1 out2 in
-        let intersect = M.inter inp out in
-        let inp = M.diff inp intersect in
-        let out = M.diff out intersect in
-        Some (inp,(Mul(eps1,eps2),mangle_states s1 s2,out)))
-     (cartesian moves1 moves2))
+     consolidate
+      (List.filter_map
+        (fun ((inp1,(eps1,s1,out1)),(inp2,(eps2,s2,out2))) ->
+          if incompatible inp1 out2 || incompatible inp2 out1 then
+           None
+          else
+           let inp = M.union inp1 inp2 in
+           let out = M.union out1 out2 in
+           let intersect = M.inter inp out in
+           let inp = M.diff inp intersect in
+           let out = M.diff out intersect in
+           Some (inp,(Mul(eps1,eps2),mangle_states s1 s2,out)))
+        (cartesian moves1 moves2)))
  (cartesian proc1 proc2)
 
 module Example =
@@ -67,8 +84,8 @@ struct
    let p0 = "p0" in
    let p1 = "p1" in
    let p2 = "p2" in
-   let prngen  = Min(Con 1., prgen) in
-   let prncons = Min(Con 1., prcons) in
+   let prngen  = Sub(Con 1., prgen) in
+   let prncons = Sub(Con 1., prcons) in
    let eps00  = prngen in
    let eps01  = prgen in
    let eps11  = Mul(prngen,prncons) in
@@ -88,8 +105,8 @@ struct
    let q0 = "q0" in
    let q1 = "q1" in
    let q2 = "q2" in
-   let prngen  = Min(Con 1., prgen) in
-   let prncons = Min(Con 1., prcons) in
+   let prngen  = Sub(Con 1., prgen) in
+   let prncons = Sub(Con 1., prcons) in
    let eps00  = prngen in
    let eps01  = prgen in
    let eps11  = Mul(prngen,prncons) in
@@ -110,7 +127,7 @@ struct
    let r0 = "r0" in
    let r1 = "r1" in
    let r2 = "r2" in
-   let prncons = Min(Con 1., prcons) in
+   let prncons = Sub(Con 1., prcons) in
    let eps00   = Con 1. in
    let eps00'  = prcons in
    let eps00'' = prcons in
@@ -150,7 +167,7 @@ struct
    let p0 = "p0" in
    let p1 = "p1" in
    let p2 = "p2" in
-   let prncons = Min(Con 1., prcons) in
+   let prncons = Sub(Con 1., prcons) in
 
    let eps00  = prcons in
    let eps00' = Con 1. in
@@ -179,7 +196,7 @@ struct
    let q0 = "q0" in
    let q1 = "q1" in
    let q2 = "q2" in
-   let prncons = Min(Con 1., prcons) in
+   let prncons = Sub(Con 1., prcons) in
 
    let eps00  = prcons in
    let eps01  = prncons in
