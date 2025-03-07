@@ -62,11 +62,14 @@ module Dot =
     String.concat "\n" (List.map pp_state_trans proc) ^
     "\n}\n"
 
-  let dot_of_processes procs =
-   let fd = open_out "/tmp/graph.dot" in
+  (* filepath is the path of a file without extension
+     procs a list of processes
+     The functions creates filepath.{gv,pdf} with one page for every process *)
+  let dot_of_processes (filepath,procs) =
+   let fd = open_out (filepath ^ ".gv") in
    List.iter (fun proc -> output_string fd (pp_process proc)) procs ;
    close_out fd ;
-   ignore (Sys.command "dot -Tps:cairo:cairo /tmp/graph.dot | ps2pdf - > /tmp/graph.pdf")
+   ignore (Sys.command ("dot -Tps:cairo:cairo " ^ filepath ^ ".gv | ps2pdf - > " ^ filepath ^ ".pdf"))
  end
 
 let opp (b, c) = (not b, c)
@@ -208,7 +211,18 @@ struct
      (* what about [a;b|nb] and [a|na;b] *)
    ]
 
-  let test = parallel (parallel (p (Var "p₁") (Var "q₁")) (q (Var "p₂") (Var "q₂"))) (r (Var "p₃"))
+  let queue1 = p (Var "p₁") (Var "q₁")
+  let queue2 = q (Var "p₂") (Var "q₂")
+  let queue3 = r (Var "p₃")
+  let queue12 = parallel queue1 queue2
+  let test = parallel queue12 queue3
+
+  let all = "/tmp/synpa/two_feeders",
+            [queue1,  Some (fun _ -> true) ;
+             queue2,  Some (fun _ -> true) ;
+             queue3,  Some (fun _ -> true) ;
+             queue12, None ;
+             test,    None ]
 end
 
 module ExampleLoop =
@@ -324,7 +338,8 @@ struct
 
   let clusterize_on c s = s.[0] = c
 
-  let all = [queue1, Some (clusterize_on 'P') ;
+  let all = "/tmp/synpa/tandem_loop_bipartite",
+            [queue1, Some (clusterize_on 'P') ;
              queue2, Some (clusterize_on 'S') ;
              test00, Some (clusterize_on 'Q') ;
              test10, Some (clusterize_on 'Q') ;
