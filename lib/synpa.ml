@@ -38,7 +38,7 @@ type process = (state * (multiaction * (prob * state * multiaction)) list) list 
 module Dot =
  struct
   let pp_transition st1 (inp, (prob, st2, out)) =
-    Printf.sprintf "  %s -> %s [label=\"%s\"]" st1 st2 ("<" ^ show_multiaction inp ^ "," ^ show_prob prob ^ "," ^ show_multiaction out ^ ">")
+    Printf.sprintf "  %s -> %s [label=\"%s\" fontsize=10]" st1 st2 ("<" ^ show_multiaction inp ^ "," ^ show_prob prob ^ "," ^ show_multiaction out ^ ">")
 
   let pp_state_trans (st, transitions) =
    String.concat "\n"
@@ -218,9 +218,9 @@ struct
   let test = parallel queue12 queue3
 
   let all = "/tmp/synpa/two_feeders",
-            [queue1,  Some (fun _ -> true) ;
-             queue2,  Some (fun _ -> true) ;
-             queue3,  Some (fun _ -> true) ;
+            [queue1,  None (*Some (fun _ -> true)*) ;
+             queue2,  None (*Some (fun _ -> true)*) ;
+             queue3,  None (*Some (fun _ -> true)*) ;
              queue12, None ;
              test,    None ]
 end
@@ -233,10 +233,10 @@ struct
   let nb = (false, 'b')
 
   (* prcons = probability to decrement job number and send an a *)
-  let p prcons : process =
-   let p0 = "p0" in
-   let p1 = "p1" in
-   let p2 = "p2" in
+  let p name (a,na) (b,nb) prcons : process =
+   let p0 = name ^ "0" in
+   let p1 = name ^ "1" in
+   let p2 = name ^ "2" in
    let prncons = Sub(Con 1., prcons) in
 
    let eps00  = prcons in
@@ -261,36 +261,14 @@ struct
          ; M.singleton na, (eps22,  p2, M.singleton nb) ]
    ]
 
-  (* prcons = probability to decrement job number and send an a *)
-  let q prcons : process =
-   let q0 = "q0" in
-   let q1 = "q1" in
-   let q2 = "q2" in
-   let prncons = Sub(Con 1., prcons) in
+  let queue1 = p "P" (a,na) (b,nb) (Var "p")
+  let queue2 = p "Q" (b,nb) (a,na) (Var "q")
+  let test = parallel queue1 queue2
 
-   let eps00  = prcons in
-   let eps01  = prncons in
-   let eps00' = Con 1. in
-
-   let eps11  = prcons in
-   let eps12  = prncons in
-   let eps10  = prcons in
-   let eps11' = prncons in
-
-   let eps22  = Con 1. in
-
-   [ q0, [ M.singleton b,  (eps01,  q1, M.singleton na)
-         ; M.singleton b,  (eps00,  q0, M.singleton a)
-         ; M.singleton nb, (eps00', q0, M.singleton na) ]
-   ; q1, [ M.singleton b,  (eps12,  q2, M.singleton na)
-         ; M.singleton b,  (eps11,  q1, M.singleton a)
-         ; M.singleton nb, (eps10,  q0, M.singleton a)
-         ; M.singleton nb, (eps11', q1, M.singleton na) ]
-   ; q2, [ M.singleton b,  (eps22,  q2, M.singleton na)
-         ; M.singleton nb, (eps22,  q2, M.singleton na) ]
-   ]
-
-  let test = parallel (p (Var "p")) (q (Var "q"))
+  let all = "/tmp/synpa/tandem_loop",
+            [queue1,  Some (fun _ -> true) ;
+             queue2,  Some (fun _ -> true) ;
+             test,    Some (fun _ -> true) ]
 end
 
 module ExampleLoopBi =
