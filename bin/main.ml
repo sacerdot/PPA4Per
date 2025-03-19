@@ -15,3 +15,6 @@ let () =
   print_endline "========== Receive after send ==========" ;
   print_endline (show_process ReceiveAfterSend.test) ;
   Dot.dot_of_processes ReceiveAfterSend.all ;
+  print_endline "========== Receive after send pure ==========" ;
+  print_endline (show_process ReceiveAfterSendPure.test) ;
+  Dot.dot_of_processes ReceiveAfterSendPure.all ;
