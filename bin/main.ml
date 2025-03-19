@@ -9,4 +9,7 @@ let () =
   Dot.dot_of_processes ExampleLoop.all ;
   print_endline "========== A tandem in loop (bipartite) ==========" ;
   print_endline (show_process ExampleLoopBi.test) ;
-  Dot.dot_of_processes ExampleLoopBi.all
+  Dot.dot_of_processes ExampleLoopBi.all ;
+  print_endline "========== Receive after send ==========" ;
+  print_endline (show_process ReceiveAfterSend.test) ;
+  Dot.dot_of_processes ReceiveAfterSend.all ;

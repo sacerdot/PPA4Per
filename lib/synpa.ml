@@ -225,6 +225,51 @@ struct
              test,    None ]
 end
 
+module ReceiveAfterSend =
+struct
+  let a  = (true, 'a')
+  let na = (false, 'a')
+  let b  = (true, 'b')
+  let nb = (false, 'b')
+
+  (* prcons = probability to decrement job number and send an a *)
+  (* Send after receive, 3 states *)
+  let p name (a,na) (b,nb) prcons : process =
+   let p0 = name ^ "0" in
+   let p1 = name ^ "1" in
+   let p2 = name ^ "2" in
+   let prncons = Sub(Con 1., prcons) in
+
+   let eps00  = Con 1. in
+   let eps01  = Con 1. in
+
+   let eps11  = prcons in
+   let eps12  = prncons in
+   let eps10  = prcons in
+   let eps11' = prncons in
+
+   let eps22  = Con 1. in
+
+   [ p0, [ M.singleton a,  (eps01,  p1, M.singleton nb)
+         ; M.singleton na, (eps00,  p0, M.singleton nb) ]
+   ; p1, [ M.singleton a,  (eps12,  p2, M.singleton nb)
+         ; M.singleton a,  (eps11,  p1, M.singleton b)
+         ; M.singleton na, (eps10,  p0, M.singleton b)
+         ; M.singleton na, (eps11', p1, M.singleton nb) ]
+   ; p2, [ M.singleton a,  (eps22,  p2, M.singleton nb)
+         ; M.singleton na, (eps22,  p2, M.singleton nb) ]
+   ]
+
+  let queue1 = p "P" (a,na) (b,nb) (Var "p")
+  let queue2 = p "Q" (b,nb) (a,na) (Var "q")
+  let test = parallel queue1 queue2
+
+  let all = "/tmp/synpa/receive_after_send",
+            [queue1,  Some (fun _ -> true) ;
+             queue2,  Some (fun _ -> true) ;
+             test,    Some (fun _ -> true) ]
+end
+
 module ExampleLoop =
 struct
   let a  = (true, 'a')
@@ -233,6 +278,7 @@ struct
   let nb = (false, 'b')
 
   (* prcons = probability to decrement job number and send an a *)
+  (* Send after receive, 3 states *)
   let p name (a,na) (b,nb) prcons : process =
    let p0 = name ^ "0" in
    let p1 = name ^ "1" in
