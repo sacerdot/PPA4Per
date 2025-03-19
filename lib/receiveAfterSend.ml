@@ -63,7 +63,23 @@ let mk_double_queue name capacity a b c prcons : process =
       :: aux (n - 1) in
  aux capacity
 
-module OneSourceOneTandem =
+module SourceQueue() =
+ struct
+  let a  = (true, 'a')
+  let b  = (true, 'b')
+
+  let source = mk_source "S" a (Var "s")
+  let queue = mk_queue "Q" 4 a b (Var "q")
+  let test = restrict [a] (parallel source queue)
+
+  let clusterize = None (*Some (fun _ -> true)*)
+  let all = "/tmp/synpa/source_queue",
+            [source,  clusterize ;
+             queue,   clusterize ;
+             test,    clusterize ]
+ end
+
+module OneSourceOneTandem() =
  struct
   let a  = (true, 'a')
   let b  = (true, 'b')
@@ -81,7 +97,7 @@ module OneSourceOneTandem =
              test,    clusterize ]
  end
 
-module TwoToOne =
+module TwoToOne() =
  struct
   let x  = (true, 'x')
   let y  = (true, 'y')
@@ -89,14 +105,18 @@ module TwoToOne =
   let b  = (true, 'b')
   let c  = (true, 'c')
 
+  let source1 = mk_source "S1" x (Var "s1")
+  let source2 = mk_source "S2" y (Var "s2")
   let queue1 = mk_queue "P" 4 x a (Var "p")
   let queue2 = mk_queue "Q" 4 y b (Var "q")
   let queue3 = mk_double_queue "R" 4 a b c (Var "r")
-  let test = restrict [a;b] (parallel queue3 (parallel queue1 queue2))
+  let test = restrict [a;b;x;y] (parallel (parallel (parallel source1 queue1) (parallel source2 queue2)) queue3)
 
   let clusterize = None (*Some (fun _ -> true)*)
   let all = "/tmp/synpa/ras_two_to_one",
-            [queue1,  clusterize ;
+            [source1,  clusterize ;
+             source2,  clusterize ;
+             queue1,  clusterize ;
              queue2,  clusterize ;
              queue3,  clusterize ;
              test,    clusterize ]

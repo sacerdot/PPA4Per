@@ -16,9 +16,16 @@ let () =
   print_endline (show_process ReceiveAfterSendNeg.test) ;
   Dot.dot_of_processes ReceiveAfterSendNeg.all ;
   *)
+  (*
   print_endline "========== RAS: One Source One Tandem ==========" ;
   print_endline (show_process ReceiveAfterSend.OneSourceOneTandem.test) ;
   Dot.dot_of_processes ReceiveAfterSend.OneSourceOneTandem.all ;
   print_endline "========== RAS: Two To One ==========" ;
-  print_endline (show_process ReceiveAfterSend.TwoToOne.test) ;
-  Dot.dot_of_processes ReceiveAfterSend.TwoToOne.all ;
+  let module M = ReceiveAfterSend.TwoToOne() in
+  print_endline (show_process M.test) ;
+  Dot.dot_of_processes M.all ;
+  *)
+  print_endline "========== RAS: Source Queue ==========" ;
+  let module M = ReceiveAfterSend.SourceQueue() in
+  print_endline (show_process M.test) ;
+  Dot.dot_of_processes M.all ;

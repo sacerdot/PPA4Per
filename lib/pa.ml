@@ -120,11 +120,12 @@ let restrict (acts : action list) (proc : process) : process =
  List.map
   (fun (s, moves) ->
     s, List.filter
-        (fun (inp,(_,_,out)) ->
+        (fun ((inp,(_,_,out)) as action) ->
           let badin = M.exists (fun a -> List.mem a acts) inp in
           let badout = M.exists (fun a -> List.mem a acts) out in
-          if not badin && badout then
-            prerr_endline "==> RENORMALIZE PROBABILITIES!" ;
+          if not badin && badout then begin
+            Format.eprintf "==> RENORMALIZE PROBABILITY: %a\n" pp_process [s, [action]]
+          end ;
           not (badin || badout))
        moves)
   proc
