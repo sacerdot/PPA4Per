@@ -247,34 +247,28 @@ struct
 
   (* prcons = probability to decrement job number and send an a *)
   (* Send after receive, 3 states *)
-  let p name (a,na) (b,nb) prcons : process =
-   let p0 = name ^ "0" in
-   let p1 = name ^ "1" in
-   let p2 = name ^ "2" in
+  let mk_queue name capacity (a,na) (b,nb) prcons : process =
    let prncons = Sub(Con 1., prcons) in
+   let p n = name ^ string_of_int n in
+   let rec aux =
+    function
+     | 0 ->
+        [ p 0, [ M.singleton a,  (Con 1.,  p 1, M.singleton nb)
+               ; M.singleton na, (Con 1.,  p 0, M.singleton nb) ]]
+     | n when n = capacity ->
+        ( p n, [ M.singleton a,  (Con 1.,  p n, M.singleton nb)
+               ; M.singleton na, (Con 1.,  p n, M.singleton nb) ])
+        :: aux (n - 1)
+     | n ->
+        ( p n, [ M.singleton a,  (prncons,  p (n+1), M.singleton nb)
+               ; M.singleton a,  (prcons,   p n,     M.singleton b)
+               ; M.singleton na, (prcons ,  p (n-1), M.singleton b)
+               ; M.singleton na, (prncons,  p n,     M.singleton nb) ])
+        :: aux (n - 1) in
+   aux capacity
 
-   let eps00  = Con 1. in
-   let eps01  = Con 1. in
-
-   let eps11  = prcons in
-   let eps12  = prncons in
-   let eps10  = prcons in
-   let eps11' = prncons in
-
-   let eps22  = Con 1. in
-
-   [ p0, [ M.singleton a,  (eps01,  p1, M.singleton nb)
-         ; M.singleton na, (eps00,  p0, M.singleton nb) ]
-   ; p1, [ M.singleton a,  (eps12,  p2, M.singleton nb)
-         ; M.singleton a,  (eps11,  p1, M.singleton b)
-         ; M.singleton na, (eps10,  p0, M.singleton b)
-         ; M.singleton na, (eps11', p1, M.singleton nb) ]
-   ; p2, [ M.singleton a,  (eps22,  p2, M.singleton nb)
-         ; M.singleton na, (eps22,  p2, M.singleton nb) ]
-   ]
-
-  let queue1 = p "P" (a,na) (b,nb) (Var "p")
-  let queue2 = p "Q" (b,nb) (a,na) (Var "q")
+  let queue1 = mk_queue "P" 4 (a,na) (b,nb) (Var "p")
+  let queue2 = mk_queue "Q" 4 (b,nb) (a,na) (Var "q")
   let test = restrict [a;na;b;nb] (parallel queue1 queue2)
 
   let clusterize = None (*Some (fun _ -> true)*)
