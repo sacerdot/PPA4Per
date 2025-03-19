@@ -79,8 +79,8 @@ let cartesian l1 l2 =
   (fun x acc -> List.map (fun y -> x,y) l2 @ acc)
   l1 []
 
-let incompatible m1 m2 =
- M.exists (fun i -> M.exists (fun j -> j = opp i) m2) m1
+let incompatible _m1 _m2 =
+ false (*M.exists (fun i -> M.exists (fun j -> j = opp i) m2) m1*)
 
 (* Merge together transitions with same input set, output set and target state,
    adding the probabilities *)
@@ -115,6 +115,19 @@ let parallel (proc1 : process) (proc2 : process) : process =
            Some (inp,(mul eps1 eps2,mangle_states s1 s2,out)))
         (cartesian moves1 moves2)))
  (cartesian proc1 proc2)
+
+let restrict (acts : action list) (proc : process) : process =
+ List.map
+  (fun (s, moves) ->
+    s, List.filter
+        (fun (inp,(_,_,out)) ->
+          let badin = M.exists (fun a -> List.mem a acts) inp in
+          let badout = M.exists (fun a -> List.mem a acts) out in
+          if not badin && badout then
+            prerr_endline "==> RENORMALIZE PROBABILITIES!" ;
+          not (badin || badout))
+       moves)
+  proc
 
 let reachable_from (proc : process) (st : state) : process =
  let rec aux visited =
@@ -262,12 +275,13 @@ struct
 
   let queue1 = p "P" (a,na) (b,nb) (Var "p")
   let queue2 = p "Q" (b,nb) (a,na) (Var "q")
-  let test = parallel queue1 queue2
+  let test = restrict [a;na;b;nb] (parallel queue1 queue2)
 
+  let clusterize = None (*Some (fun _ -> true)*)
   let all = "/tmp/synpa/receive_after_send",
-            [queue1,  Some (fun _ -> true) ;
-             queue2,  Some (fun _ -> true) ;
-             test,    Some (fun _ -> true) ]
+            [queue1,  clusterize ;
+             queue2,  clusterize ;
+             test,    clusterize ]
 end
 
 module ExampleLoop =
