@@ -1,4 +1,5 @@
 open Synpa
+open Pa
 
 let () =
   (*
@@ -11,10 +12,10 @@ let () =
   print_endline "========== A tandem in loop (bipartite) ==========" ;
   print_endline (show_process ExampleLoopBi.test) ;
   Dot.dot_of_processes ExampleLoopBi.all ;
+  print_endline "========== Receive after send (negative actions) ==========" ;
+  print_endline (show_process ReceiveAfterSendNeg.test) ;
+  Dot.dot_of_processes ReceiveAfterSendNeg.all ;
   *)
   print_endline "========== Receive after send ==========" ;
-  print_endline (show_process ReceiveAfterSend.test) ;
-  Dot.dot_of_processes ReceiveAfterSend.all ;
-  print_endline "========== Receive after send pure ==========" ;
-  print_endline (show_process ReceiveAfterSendPure.test) ;
-  Dot.dot_of_processes ReceiveAfterSendPure.all ;
+  print_endline (show_process ReceiveAfterSend.OneSourceOneTandem.test) ;
+  Dot.dot_of_processes ReceiveAfterSend.OneSourceOneTandem.all ;
