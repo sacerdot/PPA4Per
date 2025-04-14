@@ -1,23 +1,63 @@
 type expr =
  | Var of string
  | Con of float
- | Sub of expr * expr
+ | Compl of expr  (* 1 - e *)
  | Add of expr * expr
  | Mul of expr * expr
 
-let mul e1 e2 =
+let rec mul e1 e2 =
  match e1,e2 with
  | Con 1., e
  | e, Con 1. -> e
+ | Mul(e11,e12), e -> mul e11 (mul e12 e)
  | _, _ -> Mul(e1,e2)
 
-let rec pp_expr fmt =
+let distr l1 l2 =
+ List.concat (List.map (fun x -> List.map (fun y -> mul x y) l2) l1)
+
+let compl_aux =
  function
+  | Var _ | Mul _ as x -> Compl x
+  | Con f -> Con (1. -. f)
+  | Compl e -> e
+  | Add _ -> assert false
+
+let rec add_mul_nf =
+ function
+  | Var _ | Con _ as e -> [e]
+  | Compl e -> List.map compl_aux (add_mul_nf e)
+  | Add(e1,e2) -> add_mul_nf e1 @ add_mul_nf e2
+  | Mul(e1,e2) -> distr (add_mul_nf e1) (add_mul_nf e2)
+
+let simpl e =
+ let rec aux =
+  function
+   | [] -> assert false
+   | [x] -> x
+   | x::l -> Add(x,aux l)
+ in
+  aux (add_mul_nf e)
+
+let priority =
+ function
+  | Var _ | Con _ -> 3
+  | Mul _ -> 3
+  | Add _ -> 2
+  | Compl _ -> 1
+
+let rec pp_expr ?(parens=false) fmt expr =
+ if parens then Format.fprintf fmt "(" ;
+ let p = priority expr in
+ (match expr with
   | Var s -> Format.fprintf fmt "%s" s
   | Con f -> Format.fprintf fmt "%g" f
-  | Sub(e1,e2) -> Format.fprintf fmt "(%a - %a)" pp_expr e1 pp_expr e2
-  | Add(e1,e2) -> Format.fprintf fmt "(%a + %a)" pp_expr e1 pp_expr e2
-  | Mul(e1,e2) -> Format.fprintf fmt "%a * %a" pp_expr e1 pp_expr e2
+  | Compl e -> Format.fprintf fmt "1-%a" (pp_expr ~parens:(priority e <= p)) e
+  | Add(e1,e2) -> Format.fprintf fmt "%a+%a" (pp_expr ~parens:(priority e1 < p)) e1 (pp_expr ~parens:(priority e2 < p)) e2
+  | Mul(e1,e2) -> Format.fprintf fmt "%a%a" (pp_expr ~parens:(priority e1 < p)) e1 (pp_expr ~parens:(priority e2 < p)) e2) ;
+ if parens then Format.fprintf fmt ")"
+
+let pp_expr fmt expr =
+ pp_expr fmt (simpl expr)
 
 (* Matlab ha un formato per catene di Markov al tempo discreto *)
 

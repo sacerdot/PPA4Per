@@ -13,8 +13,8 @@ struct
    let p0 = "p0" in
    let p1 = "p1" in
    let p2 = "p2" in
-   let prngen  = Sub(Con 1., prgen) in
-   let prncons = Sub(Con 1., prcons) in
+   let prngen  = Compl prgen in
+   let prncons = Compl prcons in
    let eps00  = prngen in
    let eps01  = prgen in
    let eps11  = Mul(prngen,prncons) in
@@ -34,8 +34,8 @@ struct
    let q0 = "q0" in
    let q1 = "q1" in
    let q2 = "q2" in
-   let prngen  = Sub(Con 1., prgen) in
-   let prncons = Sub(Con 1., prcons) in
+   let prngen  = Compl prgen in
+   let prncons = Compl prcons in
    let eps00  = prngen in
    let eps01  = prgen in
    let eps11  = Mul(prngen,prncons) in
@@ -56,7 +56,7 @@ struct
    let r0 = "r0" in
    let r1 = "r1" in
    let r2 = "r2" in
-   let prncons = Sub(Con 1., prcons) in
+   let prncons = Compl prcons in
    let eps00   = Con 1. in
    let eps00'  = prcons in
    let eps00'' = prcons in
@@ -100,7 +100,7 @@ struct
   (* prcons = probability to decrement job number and send an a *)
   (* Send after receive, 3 states *)
   let mk_queue name capacity (a,na) (b,nb) prcons : process =
-   let prncons = Sub(Con 1., prcons) in
+   let prncons = Compl prcons in
    let p n = name ^ string_of_int n in
    let rec aux =
     function
@@ -148,7 +148,7 @@ struct
    let p0 = name ^ "0" in
    let p1 = name ^ "1" in
    let p2 = name ^ "2" in
-   let prncons = Sub(Con 1., prcons) in
+   let prncons = Compl prcons in
 
    let eps00  = prcons in
    let eps00' = Con 1. in
@@ -199,7 +199,7 @@ struct
    let q1 = name2 ^ "1" in
    let q2 = name2 ^ "2" in
    let q3 = name2 ^ "3" in
-   let prncons = Sub(Con 1., prcons) in
+   let prncons = Compl prcons in
 
    [ p0, [ M.singleton a,  (Con 1.,  q1, M.empty)
          ; M.singleton na, (Con 1.,  q0, M.empty)]
