@@ -131,6 +131,23 @@ module Tandem() =
              test,    clusterize ]
  end
 
+module GroundTandem() =
+ struct
+  let a  = (true, 'a')
+  let b  = (true, 'b')
+
+  let queue1 = mk_queue "P" 4 a b (Con 0.3)
+  let queue2 = mk_queue "Q" 4 b a (Con 0.2)
+  let test = restrict [a;b] (parallel queue1 queue2)
+
+  let clusterize = None (*Some (fun _ -> true)*)
+  let all = "/tmp/synpa/RAS_ground_tandem",
+            [queue1,  clusterize ;
+             queue2,  clusterize ;
+             test,    clusterize ]
+ end
+
+
 module OneSourceOneTandem() =
  struct
   let a  = (true, 'a')

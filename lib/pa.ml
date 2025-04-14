@@ -9,8 +9,17 @@ let rec mul e1 e2 =
  match e1,e2 with
  | Con 1., e
  | e, Con 1. -> e
+ | Con x, Con y -> Con (x *. y)
  | Mul(e11,e12), e -> mul e11 (mul e12 e)
  | _, _ -> Mul(e1,e2)
+
+let rec add e1 e2 =
+ match e1,e2 with
+ | Con 0., e
+ | e, Con 0. -> e
+ | Con x, Con y -> Con (x +. y)
+ | Add(e11,e12), e -> add e11 (add e12 e)
+ | _, _ -> Add(e1,e2)
 
 let distr l1 l2 =
  List.concat (List.map (fun x -> List.map (fun y -> mul x y) l2) l1)
@@ -34,7 +43,7 @@ let simpl e =
   function
    | [] -> assert false
    | [x] -> x
-   | x::l -> Add(x,aux l)
+   | x::l -> add x (aux l)
  in
   aux (add_mul_nf e)
 
@@ -164,7 +173,7 @@ let restrict (acts : action list) (proc : process) : process =
           let badin = M.exists (fun a -> List.mem a acts) inp in
           let badout = M.exists (fun a -> List.mem a acts) out in
           if not badin && badout then begin
-            Format.eprintf "==> RENORMALIZE PROBABILITY: %a\n" pp_process [s, [action]]
+            ignore action (*Format.eprintf "==> RENORMALIZE PROBABILITY: %a\n" pp_process [s, [action]]*)
           end ;
           not (badin || badout))
        moves)
@@ -183,3 +192,36 @@ let reachable_from (proc : process) (st : state) : process =
        aux visited to_visit
  in
   aux [] [st]
+
+exception NotAMarkovChain of string
+
+let markov_of_process (proc : process) strnames strmatr =
+ let names = List.rev_map (fun (st,_) -> st) proc in
+ let matrix =
+  List.rev_map
+   (fun (_,moves) ->
+     let probs =
+      List.map
+       (fun st ->
+         List.fold_left
+          (fun acc (ins, (e, st', outs)) ->
+            let e' = simpl e in
+            match e' with
+             | Con p when st=st' ->
+                if M.is_empty ins && M.is_empty outs then
+                 acc +. p
+                else
+                raise (NotAMarkovChain "not isolated")
+             | _ when st=st' ->
+                raise (NotAMarkovChain ("symbolic probabilities: " ^ Format.asprintf "%a" pp_expr e'))
+             | _ -> acc)
+         0.0 moves)
+       names in
+     let sum = List.fold_left (+.) 0.0 probs in
+     if abs_float (sum -. 1.0) > 0.0001 then
+      raise (NotAMarkovChain ("probs add to " ^ string_of_float sum))
+     else
+      probs)
+   proc in
+ strnames ^ "={" ^ String.concat "," (List.map (fun n -> "\"" ^ n ^ "\"") names) ^ "}\n" ^
+ strmatr  ^ "=[" ^ String.concat ";" (List.map (fun r -> String.concat "," (List.map string_of_float r)) matrix) ^ "]"
