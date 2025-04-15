@@ -68,8 +68,8 @@ let rec pp_expr ?(parens=false) fmt expr =
 let pp_expr fmt expr =
  pp_expr fmt (simpl expr)
 
-type action = bool * char (*[@@deriving show]*)  (* true = positive, false = negative *)
-let pp_action fmt (b,c) = Format.fprintf fmt "%s%c" (if b then "" else "-") c
+type action = char (*[@@deriving show]*)
+let pp_action fmt c = Format.fprintf fmt "%c" c
 
 module M = (* set in place of multiset! *)
  struct
@@ -126,9 +126,6 @@ let cartesian l1 l2 =
   (fun x acc -> List.map (fun y -> x,y) l2 @ acc)
   l1 []
 
-let incompatible _m1 _m2 =
- false (*M.exists (fun i -> M.exists (fun j -> j = opp i) m2) m1*)
-
 (* Merge together transitions with same input set, output set and target state,
    adding the probabilities *)
 let consolidate l =
@@ -149,17 +146,14 @@ let parallel (proc1 : process) (proc2 : process) : process =
  (fun ((s1,moves1),(s2,moves2)) ->
    mangle_states s1 s2,
      consolidate
-      (List.filter_map
+      (List.map
         (fun ((inp1,(eps1,s1,out1)),(inp2,(eps2,s2,out2))) ->
-          if incompatible inp1 out2 || incompatible inp2 out1 then
-           None
-          else
-           let inp = M.union inp1 inp2 in
-           let out = M.union out1 out2 in
-           let intersect = M.inter inp out in
-           let inp = M.diff inp intersect in
-           let out = M.diff out intersect in
-           Some (inp,(mul eps1 eps2,mangle_states s1 s2,out)))
+          let inp = M.union inp1 inp2 in
+          let out = M.union out1 out2 in
+          let intersect = M.inter inp out in
+          let inp = M.diff inp intersect in
+          let out = M.diff out intersect in
+          (inp,(mul eps1 eps2,mangle_states s1 s2,out)))
         (cartesian moves1 moves2)))
  (cartesian proc1 proc2)
 
@@ -167,12 +161,9 @@ let restrict (acts : action list) (proc : process) : process =
  List.map
   (fun (s, moves) ->
     s, List.filter
-        (fun ((inp,(_,_,out)) as action) ->
+        (fun (inp,(_,_,out)) ->
           let badin = M.exists (fun a -> List.mem a acts) inp in
           let badout = M.exists (fun a -> List.mem a acts) out in
-          if not badin && badout then begin
-            ignore action (*Format.eprintf "==> RENORMALIZE PROBABILITY: %a\n" pp_process [s, [action]]*)
-          end ;
           not (badin || badout))
        moves)
   proc

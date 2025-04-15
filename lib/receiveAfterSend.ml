@@ -99,8 +99,8 @@ let mk_full_double_queue name capacity a b c prcons : process =
 
 module SourceQueue() =
  struct
-  let a  = (true, 'a')
-  let b  = (true, 'b')
+  let a  = 'a'
+  let b  = 'b'
 
   let source = mk_source "S" a (Var "s")
   let queue = mk_queue "Q" 4 a b (Var "q")
@@ -117,8 +117,8 @@ module SourceQueue() =
 
 module Tandem() =
  struct
-  let a  = (true, 'a')
-  let b  = (true, 'b')
+  let a  = 'a'
+  let b  = 'b'
 
   let queue1 = mk_queue "P" 4 a b (Var "p")
   let queue2 = mk_queue "Q" 4 b a (Var "q")
@@ -133,8 +133,8 @@ module Tandem() =
 
 module GroundTandem() =
  struct
-  let a  = (true, 'a')
-  let b  = (true, 'b')
+  let a  = 'a'
+  let b  = 'b'
 
   let queue1 = mk_queue "P" 4 a b (Con 0.3)
   let queue2 = mk_queue "Q" 4 b a (Con 0.2)
@@ -150,8 +150,8 @@ module GroundTandem() =
 
 module OneSourceOneTandem() =
  struct
-  let a  = (true, 'a')
-  let b  = (true, 'b')
+  let a  = 'a'
+  let b  = 'b'
 
   let source = mk_source "S" a (Var "s")
   let queue1 = mk_queue "P" 4 a b (Var "p")
@@ -168,11 +168,11 @@ module OneSourceOneTandem() =
 
 module TwoToOne() =
  struct
-  let x  = (true, 'x')
-  let y  = (true, 'y')
-  let a  = (true, 'a')
-  let b  = (true, 'b')
-  let c  = (true, 'c')
+  let x  = 'x'
+  let y  = 'y'
+  let a  = 'a'
+  let b  = 'b'
+  let c  = 'c'
 
   let source1 = mk_source "S1" x (Var "s1")
   let source2 = mk_source "S2" y (Var "s2")
@@ -193,11 +193,11 @@ module TwoToOne() =
 
 module TwoSourcesOneQueueMerge() =
  struct
-  let x  = (true, 'x')
-  let y  = (true, 'y')
-  let a  = (true, 'a')
-  let b  = (true, 'b')
-  let c  = (true, 'c')
+  let x  = 'x'
+  let y  = 'y'
+  let a  = 'a'
+  let b  = 'b'
+  let c  = 'c'
 
   let source1 = mk_source "S1" x (Var "s1")
   let source2 = mk_source "S2" y (Var "s2")
