@@ -68,8 +68,6 @@ let rec pp_expr ?(parens=false) fmt expr =
 let pp_expr fmt expr =
  pp_expr fmt (simpl expr)
 
-(* Matlab ha un formato per catene di Markov al tempo discreto *)
-
 type action = bool * char (*[@@deriving show]*)  (* true = positive, false = negative *)
 let pp_action fmt (b,c) = Format.fprintf fmt "%s%c" (if b then "" else "-") c
 
@@ -195,6 +193,8 @@ let reachable_from (proc : process) (st : state) : process =
 
 exception NotAMarkovChain of string
 
+(* Output in Matlab/Octave syntax *)
+
 let markov_of_process (proc : process) strnames strmatr =
  let names = List.rev_map (fun (st,_) -> st) proc in
  let matrix =
@@ -213,13 +213,13 @@ let markov_of_process (proc : process) strnames strmatr =
                 else
                 raise (NotAMarkovChain "not isolated")
              | _ when st=st' ->
-                raise (NotAMarkovChain ("symbolic probabilities: " ^ Format.asprintf "%a" pp_expr e'))
+                raise (NotAMarkovChain (Format.asprintf "symbolic probabilities: %a" pp_expr e'))
              | _ -> acc)
          0.0 moves)
        names in
      let sum = List.fold_left (+.) 0.0 probs in
      if abs_float (sum -. 1.0) > 0.0001 then
-      raise (NotAMarkovChain ("probs add to " ^ string_of_float sum))
+      raise (NotAMarkovChain (Format.sprintf "probs add to %f" sum))
      else
       probs)
    proc in
