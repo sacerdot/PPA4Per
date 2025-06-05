@@ -7,6 +7,8 @@ let mk_source name a pr :  process =
 
 (* Queue send (to b) after receive (from a) *)
 (* prcons = probability to decrement job number and send *)
+(* When full it accepts and throws away everything but *)
+(* it can still consume and emit *)
 let mk_queue name capacity a b prcons : process =
  let prncons = Compl prcons in
  let p n = name ^ string_of_int n in
@@ -16,8 +18,9 @@ let mk_queue name capacity a b prcons : process =
       [ p 0, [ M.singleton a,  (Con 1.,  p 1, M.empty)
              ; M.empty,        (Con 1.,  p 0, M.empty) ]]
    | n when n = capacity ->
-      ( p n, [ M.singleton a,  (Con 1.,  p n, M.empty)
-             ; M.empty,        (Con 1.,  p n, M.empty) ])
+      ( p n, [ M.singleton a,  (Con 1.,  p n,     M.empty)
+             ; M.empty,        (prcons,  p (n-1), M.singleton b)
+             ; M.empty,        (prncons, p n,     M.empty) ])
       :: aux (n - 1)
    | n ->
       ( p n, [ M.singleton a,  (prncons,  p (n+1), M.empty)
@@ -29,7 +32,8 @@ let mk_queue name capacity a b prcons : process =
 
 (* Queue send (to c) after receive (from a, b or both) *)
 (* prcons = probability to decrement job number and send *)
-(* When full it accepts everything and emits nothing *)
+(* When full it accepts and throws away everything but *)
+(* it can still consume and emit *)
 let mk_double_queue name capacity a b c prcons : process =
  let prncons = Compl prcons in
  let p n = name ^ string_of_int n in
@@ -41,16 +45,24 @@ let mk_double_queue name capacity a b c prcons : process =
              ; M.of_list [a;b], (Con 1.,  p 2, M.empty)
              ; M.empty,         (Con 1.,  p 0, M.empty) ]]
    | n when n = capacity - 1 ->
-      ( p n, [ M.singleton a,   (Con 1.,  p (n+1), M.empty)
-             ; M.singleton b,   (Con 1.,  p (n+1), M.empty)
-             ; M.of_list [a;b], (Con 1.,  p (n+1), M.empty)
-             ; M.empty,         (Con 1.,  p n, M.empty) ])
+      ( p n, [ M.singleton a,   (prcons,   p n,     M.singleton c)
+             ; M.singleton b,   (prcons,   p n,     M.singleton c)
+             ; M.of_list [a;b], (prcons,   p (n+1), M.singleton c)
+             ; M.empty,         (prcons,   p (n-1), M.singleton c)
+             ; M.singleton a,   (prncons,  p (n+1), M.empty)
+             ; M.singleton b,   (prncons,  p (n+1), M.empty)
+             ; M.of_list [a;b], (prncons,  p (n+1), M.empty)
+             ; M.empty,         (prncons,  p n,     M.empty) ])
       :: aux (n - 1)
    | n when n = capacity ->
-      ( p n, [ M.singleton a,   (Con 1.,  p n, M.empty)
-             ; M.singleton b,   (Con 1.,  p n, M.empty)
-             ; M.of_list [a;b], (Con 1.,  p n, M.empty)
-             ; M.empty,         (Con 1.,  p n, M.empty) ])
+      ( p n, [ M.singleton a,   (prcons,   p (n-1), M.singleton c)
+             ; M.singleton b,   (prcons,   p (n-1), M.singleton c)
+             ; M.of_list [a;b], (prcons,   p (n-1), M.singleton c)
+             ; M.empty,         (prcons,   p (n-1), M.singleton c)
+             ; M.singleton a,   (prncons,  p n, M.empty)
+             ; M.singleton b,   (prncons,  p n, M.empty)
+             ; M.of_list [a;b], (prncons,  p n, M.empty)
+             ; M.empty,         (prncons,  p n, M.empty) ])
       :: aux (n - 1)
    | n ->
       ( p n, [ M.singleton a,   (prncons,  p (n+1), M.empty)
@@ -66,7 +78,8 @@ let mk_double_queue name capacity a b c prcons : process =
 
 (* Queue send (to c) after receive (from a, b or both) *)
 (* prcons = probability to decrement job number and send *)
-(* When full it does not accept anymore *)
+(* When full it does not accept anymore, but it can still consume *)
+(* and emit *)
 let mk_full_double_queue name capacity a b c prcons : process =
  let prncons = Compl prcons in
  let p n = name ^ string_of_int n in
@@ -78,12 +91,16 @@ let mk_full_double_queue name capacity a b c prcons : process =
              ; M.of_list [a;b], (Con 1.,  p 2, M.empty)
              ; M.empty,         (Con 1.,  p 0, M.empty) ]]
    | n when n = capacity - 1 ->
-      ( p n, [ M.singleton a,   (Con 1.,  p (n+1), M.empty)
-             ; M.singleton b,   (Con 1.,  p (n+1), M.empty)
-             ; M.empty,         (Con 1.,  p n, M.empty) ])
+      ( p n, [ M.singleton a,   (prcons,  p n,     M.singleton c)
+             ; M.singleton b,   (prcons,  p n,     M.singleton c)
+             ; M.singleton a,   (prncons, p (n+1), M.empty)
+             ; M.singleton b,   (prncons, p (n+1), M.empty)
+             ; M.empty,         (prcons,  p (n-1), M.singleton c)
+             ; M.empty,         (prncons, p n,     M.empty) ])
       :: aux (n - 1)
    | n when n = capacity ->
-      ( p n, [ M.empty,         (Con 1.,  p n, M.empty) ])
+      ( p n, [ M.empty,         (prcons,  p (n-1), M.singleton c)
+             ; M.empty,         (prncons, p n,     M.empty) ])
       :: aux (n - 1)
    | n ->
       ( p n, [ M.singleton a,   (prncons,  p (n+1), M.empty)

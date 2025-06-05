@@ -39,12 +39,10 @@ let () =
   print_endline (show_process M.test) ;
   Dot.dot_of_processes M.all ;
   *)
-  (*
   print_endline "========== SAR: Tandem ==========" ;
   let module M = SendAfterReceive.Tandem() in
   print_endline (show_process M.test) ;
   Dot.dot_of_processes M.all ;
-  *)
   (*
   print_endline "========== RAS: Tandem ==========" ;
   let module M = ReceiveAfterSend.Tandem() in
@@ -57,8 +55,10 @@ let () =
   print_endline (show_process M.test) ;
   Dot.dot_of_processes M.all ;
   *)
+  (*
   print_endline "========== RAS: (ground) Tandem ==========" ;
   let module M = ReceiveAfterSend.GroundTandem() in
   print_endline (show_process M.test) ;
   Dot.dot_of_processes M.all ;
   print_endline (markov_of_process M.test "states" "M")
+*)
