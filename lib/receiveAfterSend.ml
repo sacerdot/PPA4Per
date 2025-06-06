@@ -18,7 +18,8 @@ let mk_queue name capacity a b prcons : process =
       [ p 0, [ M.singleton a,  (Con 1.,  p 1, M.empty)
              ; M.empty,        (Con 1.,  p 0, M.empty) ]]
    | n when n = capacity ->
-      ( p n, [ M.singleton a,  (Con 1.,  p n,     M.empty)
+      ( p n, [ M.singleton a,  (prcons,  p n,     M.singleton b)
+             ; M.singleton a,  (prncons, p n,     M.empty)
              ; M.empty,        (prcons,  p (n-1), M.singleton b)
              ; M.empty,        (prncons, p n,     M.empty) ])
       :: aux (n - 1)
@@ -55,9 +56,9 @@ let mk_double_queue name capacity a b c prcons : process =
              ; M.empty,         (prncons,  p n,     M.empty) ])
       :: aux (n - 1)
    | n when n = capacity ->
-      ( p n, [ M.singleton a,   (prcons,   p (n-1), M.singleton c)
-             ; M.singleton b,   (prcons,   p (n-1), M.singleton c)
-             ; M.of_list [a;b], (prcons,   p (n-1), M.singleton c)
+      ( p n, [ M.singleton a,   (prcons,   p n, M.singleton c)
+             ; M.singleton b,   (prcons,   p n, M.singleton c)
+             ; M.of_list [a;b], (prcons,   p n, M.singleton c)
              ; M.empty,         (prcons,   p (n-1), M.singleton c)
              ; M.singleton a,   (prncons,  p n, M.empty)
              ; M.singleton b,   (prncons,  p n, M.empty)
