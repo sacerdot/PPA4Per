@@ -26,7 +26,8 @@ let mk_queue name capacity a b prcons : process =
              ; M.singleton a,  (prcons,  p 0, M.singleton b)
              ; M.empty,        (Con 1.,  p 0, M.empty) ]]
    | n when n = capacity ->
-      ( p n, [ M.singleton a,  (Con 1.,  p n, M.empty)
+      ( p n, [ M.singleton a,  (prcons,  p (n-1), M.singleton b)
+             ; M.singleton a,  (prncons, p n, M.empty)
              ; M.empty,        (prcons,  p (n-1), M.singleton b)
              ; M.empty,        (prncons, p n, M.empty) ])
       :: aux (n - 1)
@@ -57,7 +58,7 @@ let mk_double_queue name capacity a b c prcons : process =
    | n when n = capacity - 1 ->
       ( p n, [ M.singleton a,   (prcons,   p n,     M.singleton c)
              ; M.singleton b,   (prcons,   p n,     M.singleton c)
-             ; M.of_list [a;b], (prcons,   p (n+1), M.singleton c)
+             ; M.of_list [a;b], (prcons,   p n,     M.singleton c)
              ; M.empty,         (prcons,   p (n-1), M.singleton c)
              ; M.singleton a,   (prncons,  p (n+1), M.empty)
              ; M.singleton b,   (prncons,  p (n+1), M.empty)
@@ -163,6 +164,28 @@ module Tandem() =
 
   let clusterize = None (*Some (fun _ -> true)*)
   let all = "/tmp/synpa/SAR_tandem",
+            [queue1,  clusterize ;
+             buffer1, clusterize ;
+             queue2,  clusterize ;
+             buffer2, clusterize ;
+             test,    clusterize ]
+ end
+
+module GroundTandem() =
+ struct
+  let a  = 'a'
+  let a' = 'A'
+  let b  = 'b'
+  let b' = 'B'
+
+  let queue1 = mk_queue "P" 4 a' b (Con 0.3)
+  let buffer1 = mk_buffer "B1" b b'
+  let queue2 = mk_queue "Q" 4 b' a (Con 0.2)
+  let buffer2 = mk_buffer "B2" a a'
+  let test = restrict [a;b;a';b'] (parallel (parallel queue1 buffer1) (parallel queue2 buffer2))
+
+  let clusterize = None (*Some (fun _ -> true)*)
+  let all = "/tmp/synpa/SAR_ground_tandem",
             [queue1,  clusterize ;
              buffer1, clusterize ;
              queue2,  clusterize ;
